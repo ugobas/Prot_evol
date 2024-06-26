@@ -1,0 +1,18 @@
+# A) Input files
+### File with mutations, optional. Uncomment if any:
+#MUT= HCV_mutations.txt
+MUT=AA_P100_400fvp.txt
+### File with alignment, optional. Uncomment if any:
+#ALI=Triosephosphate_Aln.fas
+### PDB file
+CHAIN=  A
+PDB=/data/ortizg/databases/pdb/3tyq.pdb  
+### Alternative structures. IMPORTANT: Change the path if needed
+FILE_STR=structures.in
+#================================================================
+# B) Thermodynamic model
+TEMP=	0.5		# Temperature
+SU1=	0.065		# configurational entropy per res (unfold)
+SC1=  0.065		# configurational entropy per res (misfold)
+SC0=  0.0		# configurational entropy offset (misfold)
+REM=   2		# Use up to 1,2,3r moments of misfolding energy?

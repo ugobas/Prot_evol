@@ -1,0 +1,99 @@
+# Program Prot_evol
+
+Author  : Ugo Bastolla Centro de Biologia Molecular Severo Ochoa 
+          (CSIC-UAM) ubastolla@cbm.csic.es
+
+## Description
+
+The program Prot_evol computes Structure and Stability Constrained Protein Evoluion (SSCPE) models (Lorca et al. 2022 [1]) that implement selection for structural conservation and thermodynamic stability of the native state against unfolding and misfolding. For each of the eight SSCPE models, the program outputs the stationary frequencies of the amino acids at each protein site ([].AA_profiles.txt).
+
+From the stationary frequencies, the framework SSCPE.pl https://github.com/ugobas/SSCPE/SSCPE.zip computes one of eight types of exchangeability matrices that determine the full substitution process for each protein site and inputs these processes to the program RAxML-NG (Kozlov et al. 2019 [2]) that infers the corresponding Maximum Likelihood (ML) model.
+
+For a given multiple sequence alignment (MSA) and a list of protein structures (PDB files) whose sequences have local identity >50% with a sequence present in the MSA, Prot_evol computes eight types of SSCPE models. Each model enforces either selection for protein folding stability against unfolding and misfolding (Stab-CPE), evaluated with the approach DeltaGREM [6,7] or selection for protein structure conservation (Str-CPE), evaluated with the linearly forced Elastic Network Model by Julian Echave [8] and a specific model of the perturbation associated to each possible amino acid mutation, implemented in the program tnm [9], or both.
+
+Each model fits one (or two, for the combined models) selection parameters Lambda and global amino acid frequencies. The eight SSCPE models are the following:
+
+(1) The Stab-CPE mean-field model (MF) that enforces selection for protein folding stability, assessed self-consistently computing the site-specific frequencies that minimize the average DeltaG plus the Kullback-Leibler divergence from the global frequencies.
+
+(2) The Stab-CPE wild-type (WT) model that considers the stability effect (DDG) of all possible mutations of the wild-type sequence.
+
+(3) The Str-CPE RMSD and DE models that reads an input file contatining the predicted effect of each amino acid mutation of the wild-type sequence either on the mutant structure (<>_mut_RMSD.dat, RMSD model) or on the free energy barrier that separates the mutant structure and the native structure (<>_mut_DE.dat, DE model). Both files are produced by the program TNM that models each specific mutation into a perturbation [8] and propagates it on the native structure through the Torsional Network Model (TNM) [9].
+
+(4) The combined models RMSDMF, RMSDWT, DEMF, DEWT that combine Stab-CPE and Str-CPE and have two selection parameters Lambda_stab abd Lambda_str.
+
+The selection parameters Lambda are optimized by minimizing the symmetrized Kullback-Leibler divergence between the model and the input MSA, KL(mod,MSA)+KL(MSA,mod) (the latter term is minus the likelihood of the data). The score is properly defined only if f_ia is not zero for any site and amino acid. Therefore, we impose a minimum value for both the MSA f_ia and the model P_ia.
+The fit of Lambda is regularized by minimizing KL+REG*Lambda^2.
+There are three strategies to obtain REG and consequently Lambda.
+We chose the value of REG that maximizes the "specific heat" (minus derivative of the likelihood of the observed site-specific amino acid distributions with respect to the regularization, see https://pubmed.ncbi.nlm.nih.gov/28555214/)
+
+There are 3 possible binary options for the exchangeability matrix, amounting to 8 combinations: the Halpern-Bruno model of the fixation probability (default, it may be disabled with -noHB), the flux model that requires that each pair of amino acids has the same site-averaged flux as th empirical model (default, it may be disabled with the option -noflux), RAxML-NG internally normalizes the substitution rate at each site and SSCPE.pl undoes this normalization by providing as input the substitution rate computed by Prot_vol (default, it may be disabled with the option -rate 0). The empirical exchangeability matrix can be input (e.g. -matrix JTT) or it can be internally optimized by Prot_evol (default);
+
+## INPUT:
+MSA (-ali), optional; list of PDB codees (-pbdlist) plus the folder where they are stored or a single PDB file (-pdb) 
+
+## OUTPUT:
+
+The file [].summary.dat contains summary results for each computed model, starting from a model that only implements the mutational process.
+
+If a multiple sequence alignment is provided, the site-specific sequence entropy is printed in the file [].entropy.dat
+
+For each model MOD the program prints site-specific amino acid frequencies (MOD_AA.profiles.txt) 
+
+For each model, it prints site-specific sequence entropy and substitution rates in MOD.rate_profile.dat.
+
+Additionally, the program can simulate stability constrained protein evolution, without applying the approximation that protein sites evolve independently of each other.
+It prints a multiple sequence alignment of simulated sequences in the file [].msa.fasta and it prints statistics of accepted mutations and substitutions that increase stability in [].sel.dat
+
+
+### References:
+1. Lorca I, Arenas M and Bastolla U. 2022. Structure and stability constrained substitution models outperform traditional substitution models used for evolutionary inference. Submitted.
+2. Arenas M., Sanchez-Cobos A. and Bastolla, U. 2015.
+Maximum likelihood phylogenetic inference with selection on protein folding stability. Mol Biol. Evol. 32:2195-207.
+3. Arenas M, Bastolla U. 2020. ProtASR2: Ancestral reconstruction of protein sequences accounting for folding stability. Meth. Ecol Evol. 11:248-257.
+4. Kozlov AM, Darriba D, Flouri T, Morel B, Stamatakis A. 2019. RAxML-NG: a fast, scalable and user-friendly tool for maximum likelihood phylogenetic inference. Bioinformatics 35: 4453-4455.
+5. Yang Z. 2007. PAML 4: phylogenetic analysis by maximum likelihood. Mol. Biol. Evol. 24:1586-1591.
+6. Minning J, Porto M, Bastolla U. 2013. Detecting selection for negative design in proteins through an improved model of the misfolded state. Proteins 81:1102-1112.
+7. Bastolla U. 2014. Detecting selection on protein stability through statistical mechanical models of folding and evolution. Biomolecules 4:291-31.
+8. Echave J. 2008. Evolutionary divergence of protein structure: The linearly forced elastic network model. Chem Phys Lett 457, 413-416
+9. Mendez R and Bastolla U. 2010. Torsional network model: normal modes in torsion angle space better correlate with conformation changes in proteins. Phys Rev Lett. 104:228103.
+
+Citations: 
+1) Jimenez MJ, Arenas M, Bastolla U (2018) Substitution rates predicted by stability-constrained models of protein evolution are not consistent with empirical data. Mol Biol Evol. 35: 743-755
+2) Arenas M, Weber CC, Liberles DA, Bastolla U (2017) ProtASR: An Evolutionary Framework for Ancestral Protein Reconstruction with Selection on Folding Stability. Syst Biol. 66:1054-1064. 
+3) Arenas M, Sánchez-Cobos A, Bastolla U (2015) Maximum-Likelihood Phylogenetic Inference with Selection on Protein Folding Stability. Mol Biol Evol. 32:2195-207.
+4) Minning J, Porto M, Bastolla U (2013) Detecting selection for negative design in proteins through an improved model of the misfolded state. Proteins 81:1102-12. 
+
+
+## Usage:
+
+
+   -ali <file>       # file with aligned proteins (opt)
+  -pdblist <file.pdb_list>   # List of pdb files
+  -pdbdir  <path of pdb files>
+  -pdb <file.pdb>   # Unique pdb file, mandatory if not list
+  -chain <chain>    # Chain identifiers (ex. AB)
+  -opt_KL           # Optimize KL divergence instead of likel.
+  -reg  <Regularization parameter>
+  -stab_thr  <Min. number of stable seqs for accepting a pdb>
+  -nostr  Do not predict structural deformation with TNM (slow)
+  -mut_para <parameters for computing str. effect of muts. (opt)>
+  -dna  <file_dna>  # file with DNA sequece (optional)
+  -file <configuration file> (ex. Prot_evol.in), optional
+Simulations of protein evolution:
+  -it  <IT_MAX>     # Number of substitutions per site
+  -pop  <N_pop>     # population size
+Mean-field computations:
+  -meanfield        # Meanfield computation of subst. rates
+  -lambda <lambda>  # Parameter for meanfield
+                    # If lambda not given, use optimal lambda
+Mutational model:
+  -freq <FREQ>      # Criterion to fit frequencies. Allowed:
+                    # nuc (fit nucleotides from prot sequence)
+                    # aa (fit amino acids from prot sequence)
+                    # input (get nucleotides from input)
+  -gc <GC_bias>     # frequency of nucleotides G+C
+  -fG <freq>        # Input frequency for each nucleotide
+  -tt <trans_ratio> # transition-transversion ratio (>1)
+Thermodynamic model:
+  -temp <TEMP>      # temperature
+  -sU1  <sU1>       # Unfolded entropy per residue
